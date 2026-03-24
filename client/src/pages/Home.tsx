@@ -4,15 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
   Activity,
-  ListTodo,
   Sparkles,
   TrendingUp,
   PenSquare,
-  CheckCircle2,
-  Clock,
   Brain,
+  User,
+  Users,
+  CreditCard,
+  ArrowRight,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
@@ -31,7 +33,6 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { data: stats, isLoading: statsLoading } = trpc.dashboard.stats.useQuery();
   const { data: recentActivities, isLoading: activitiesLoading } = trpc.dashboard.recentActivities.useQuery();
-  const { data: todayTasks, isLoading: tasksLoading } = trpc.dashboard.todayTasks.useQuery();
 
   const chartData = useMemo(() => {
     if (!stats?.timeline) return [];
@@ -46,15 +47,34 @@ export default function Home() {
     }));
   }, [stats?.timeline]);
 
+  const profileSkills = useMemo(() => {
+    if (!stats?.profile?.skills) return [];
+    const skills = stats.profile.skills as string[];
+    return skills.slice(0, 6);
+  }, [stats?.profile]);
+
+  const profileInterests = useMemo(() => {
+    if (!stats?.profile?.interests) return [];
+    const interests = stats.profile.interests as string[];
+    return interests.slice(0, 6);
+  }, [stats?.profile]);
+
+  const profileStrengths = useMemo(() => {
+    if (!stats?.profile?.strengths) return [];
+    const strengths = stats.profile.strengths as string[];
+    return strengths.slice(0, 4);
+  }, [stats?.profile]);
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             おかえりなさい、{user?.name || "ユーザー"}さん
           </h1>
           <p className="text-muted-foreground mt-1">
-            今日も記録を残して、あなたのプロフィールを充実させましょう
+            記録を残して、あなたのプロフィールをAIで充実させましょう
           </p>
         </div>
         <Button onClick={() => setLocation("/record")} className="gap-2">
@@ -63,40 +83,134 @@ export default function Home() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard
+      {/* Profile Completeness - MAIN HERO */}
+      <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-background to-accent/5">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold">AIプロフィール</h2>
+              </div>
+              {statsLoading ? (
+                <Skeleton className="h-4 w-full" />
+              ) : stats?.profile?.generatedBio ? (
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {stats.profile.generatedBio}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  記録を追加すると、AIがあなたのプロフィールを自動生成します
+                </p>
+              )}
+              <div className="flex items-center gap-3">
+                <Progress value={stats?.completeness ?? 0} className="flex-1 h-2" />
+                <span className="text-sm font-medium text-primary whitespace-nowrap">
+                  {statsLoading ? "..." : `${stats?.completeness ?? 0}%`}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                プロフィール充実度 — 記録を増やすとAIがより正確にあなたを分析します
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 shrink-0">
+              <Button onClick={() => setLocation("/profile")} variant="default" className="gap-2">
+                <User className="h-4 w-4" />
+                プロフィールを見る
+              </Button>
+              <Button onClick={() => setLocation("/record")} variant="outline" className="gap-2">
+                <PenSquare className="h-4 w-4" />
+                記録を追加
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Skills & Interests Tags */}
+      {(profileSkills.length > 0 || profileInterests.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {profileSkills.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-primary" />
+                  AI抽出スキル
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {profileSkills.map((skill, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {skill}
+                    </Badge>
+                  ))}
+                  {(stats?.profile?.skills as string[])?.length > 6 && (
+                    <Badge variant="outline" className="text-xs text-muted-foreground cursor-pointer" onClick={() => setLocation("/profile")}>
+                      +{(stats?.profile?.skills as string[]).length - 6}
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {profileInterests.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-chart-2" />
+                  興味・関心
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {profileInterests.map((interest, i) => (
+                    <Badge key={i} variant="outline" className="text-xs">
+                      {interest}
+                    </Badge>
+                  ))}
+                  {(stats?.profile?.interests as string[])?.length > 6 && (
+                    <Badge variant="outline" className="text-xs text-muted-foreground cursor-pointer" onClick={() => setLocation("/profile")}>
+                      +{(stats?.profile?.interests as string[]).length - 6}
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Stats Cards - Compact */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <MiniStat
           title="総記録数"
           value={stats?.activityCount ?? 0}
-          icon={<Activity className="h-4 w-4" />}
+          icon={<Activity className="h-3.5 w-3.5" />}
           loading={statsLoading}
-          color="text-chart-1"
         />
-        <StatsCard
-          title="完了タスク"
-          value={stats?.taskStats.completed ?? 0}
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          loading={statsLoading}
-          color="text-chart-4"
-        />
-        <StatsCard
-          title="進行中タスク"
-          value={stats?.taskStats.pending ?? 0}
-          icon={<Clock className="h-4 w-4" />}
-          loading={statsLoading}
-          color="text-chart-2"
-        />
-        <StatsCard
+        <MiniStat
           title="抽出インサイト"
           value={stats?.insightCounts.reduce((sum, c) => sum + Number(c.count), 0) ?? 0}
-          icon={<Brain className="h-4 w-4" />}
+          icon={<Brain className="h-3.5 w-3.5" />}
           loading={statsLoading}
-          color="text-chart-5"
+        />
+        <MiniStat
+          title="マッチング候補"
+          value={stats?.taskStats.completed ?? 0}
+          icon={<Users className="h-3.5 w-3.5" />}
+          loading={statsLoading}
+        />
+        <MiniStat
+          title="名刺生成"
+          value={stats?.profile?.generatedBio ? 1 : 0}
+          icon={<CreditCard className="h-3.5 w-3.5" />}
+          loading={statsLoading}
         />
       </div>
 
+      {/* Activity Chart + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Activity Chart */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -150,47 +264,36 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Today's Tasks */}
+        {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between text-base">
-              <span className="flex items-center gap-2">
-                <ListTodo className="h-4 w-4 text-primary" />
-                今日のタスク
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => setLocation("/tasks")}>
-                すべて見る
-              </Button>
-            </CardTitle>
+            <CardTitle className="text-base">クイックアクション</CardTitle>
           </CardHeader>
-          <CardContent>
-            {tasksLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-10 w-full" />)}
-              </div>
-            ) : todayTasks && todayTasks.length > 0 ? (
-              <div className="space-y-2">
-                {todayTasks.slice(0, 5).map(task => (
-                  <div key={task.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className={`h-2 w-2 rounded-full shrink-0 ${
-                      task.priority === "high" ? "bg-destructive" :
-                      task.priority === "medium" ? "bg-chart-2" : "bg-chart-4"
-                    }`} />
-                    <span className="text-sm truncate flex-1">{task.title}</span>
-                    {task.isAutoGenerated && (
-                      <Badge variant="secondary" className="text-xs shrink-0">
-                        <Sparkles className="h-3 w-3 mr-1" />AI
-                      </Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-6 text-center text-muted-foreground text-sm">
-                <ListTodo className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                タスクはありません
-              </div>
-            )}
+          <CardContent className="space-y-2">
+            <QuickAction
+              icon={<PenSquare className="h-4 w-4" />}
+              label="新しい記録を追加"
+              description="テキスト・音声・画像で記録"
+              onClick={() => setLocation("/record")}
+            />
+            <QuickAction
+              icon={<Sparkles className="h-4 w-4" />}
+              label="AIプロフィール生成"
+              description="記録からプロフィールを自動作成"
+              onClick={() => setLocation("/profile")}
+            />
+            <QuickAction
+              icon={<Users className="h-4 w-4" />}
+              label="マッチングを探す"
+              description="AIがあなたに合う人をレコメンド"
+              onClick={() => setLocation("/matching")}
+            />
+            <QuickAction
+              icon={<CreditCard className="h-4 w-4" />}
+              label="デジタル名刺を作成"
+              description="QRコード付き名刺を生成"
+              onClick={() => setLocation("/card")}
+            />
           </CardContent>
         </Card>
       </div>
@@ -258,30 +361,52 @@ export default function Home() {
   );
 }
 
-function StatsCard({ title, value, icon, loading, color }: {
+function MiniStat({ title, value, icon, loading }: {
   title: string;
   value: number;
   icon: React.ReactNode;
   loading: boolean;
-  color: string;
 }) {
   return (
     <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{title}</p>
-            {loading ? (
-              <Skeleton className="h-8 w-16 mt-1" />
-            ) : (
-              <p className="text-2xl font-bold mt-1">{value}</p>
-            )}
-          </div>
-          <div className={`h-10 w-10 rounded-lg bg-accent flex items-center justify-center ${color}`}>
+      <CardContent className="pt-4 pb-4">
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-md bg-accent flex items-center justify-center text-muted-foreground">
             {icon}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{title}</p>
+            {loading ? (
+              <Skeleton className="h-5 w-8 mt-0.5" />
+            ) : (
+              <p className="text-lg font-bold leading-none mt-0.5">{value}</p>
+            )}
           </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function QuickAction({ icon, label, description, onClick }: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 hover:border-primary/20 transition-all text-left group"
+    >
+      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/20 transition-colors">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+    </button>
   );
 }

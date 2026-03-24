@@ -466,13 +466,27 @@ export const appRouter = router({
   // ===== Dashboard =====
   dashboard: router({
     stats: protectedProcedure.query(async ({ ctx }) => {
-      const [activityCount, taskStats, insightCounts, timeline] = await Promise.all([
+      const [activityCount, taskStats, insightCounts, timeline, profile] = await Promise.all([
         db.getUserActivityCount(ctx.user.id),
         db.getUserTaskStats(ctx.user.id),
         db.getUserInsightCounts(ctx.user.id),
         db.getUserActivityTimeline(ctx.user.id, 30),
+        db.getOrCreateProfile(ctx.user.id),
       ]);
-      return { activityCount, taskStats, insightCounts, timeline };
+      // Calculate profile completeness
+      let completeness = 0;
+      const checks = [
+        !!ctx.user.name,
+        !!(ctx.user as any).school,
+        !!(ctx.user as any).bio,
+        !!profile?.generatedBio,
+        Array.isArray(profile?.skills) && (profile.skills as string[]).length > 0,
+        Array.isArray(profile?.interests) && (profile.interests as string[]).length > 0,
+        Array.isArray(profile?.strengths) && (profile.strengths as string[]).length > 0,
+        activityCount > 0,
+      ];
+      completeness = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+      return { activityCount, taskStats, insightCounts, timeline, profile, completeness };
     }),
     recentActivities: protectedProcedure.query(async ({ ctx }) => {
       return db.getUserActivities(ctx.user.id, { limit: 5 });

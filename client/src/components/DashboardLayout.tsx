@@ -41,15 +41,18 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 
-const menuItems = [
+const mainMenuItems = [
   { icon: LayoutDashboard, label: "ダッシュボード", path: "/" },
+  { icon: User, label: "マイプロフィール", path: "/profile" },
   { icon: PenSquare, label: "記録する", path: "/record" },
   { icon: Activity, label: "アクティビティ", path: "/activities" },
-  { icon: User, label: "マイプロフィール", path: "/profile" },
-  { icon: ListTodo, label: "タスク管理", path: "/tasks" },
   { icon: TrendingUp, label: "モチベーション", path: "/motivation" },
   { icon: Users, label: "マッチング", path: "/matching" },
   { icon: CreditCard, label: "デジタル名刺", path: "/card" },
+];
+
+const subMenuItems = [
+  { icon: ListTodo, label: "タスク", path: "/tasks" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -121,7 +124,8 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const allMenuItems = [...mainMenuItems, ...subMenuItems];
+  const activeMenuItem = allMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -174,7 +178,7 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {mainMenuItems.map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
@@ -183,6 +187,29 @@ function DashboardLayoutContent({
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
                       className="h-10 transition-all font-normal"
+                    >
+                      <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+            {!isCollapsed && (
+              <div className="px-4 pt-4 pb-1">
+                <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">その他</span>
+              </div>
+            )}
+            <SidebarMenu className="px-2 py-1">
+              {subMenuItems.map(item => {
+                const isActive = location === item.path;
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      onClick={() => setLocation(item.path)}
+                      tooltip={item.label}
+                      className="h-10 transition-all font-normal text-muted-foreground"
                     >
                       <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
                       <span>{item.label}</span>
