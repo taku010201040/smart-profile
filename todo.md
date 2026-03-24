@@ -35,3 +35,6 @@
 ## Phase 5: テスト・調整
 - [x] Vitestテスト作成
 - [x] デバッグ・最終調整
+
+## Bugfix
+- [x] /recordページのDATE()関連SQLクエリエラーを修正

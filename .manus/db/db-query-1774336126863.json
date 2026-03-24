@@ -1,0 +1,15 @@
+{
+  "query": "SELECT DATE(createdAt) as date, count(*) as cnt, type FROM activities WHERE userId = 1 AND createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY DATE(createdAt), type ORDER BY DATE(createdAt)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user qb4KWKvh9RF89Sy.ba0d13ba57ce --database DPWoTENtbqvfBEJqVPVTUM --execute SELECT DATE(createdAt) as date, count(*) as cnt, type FROM activities WHERE userId = 1 AND createdAt >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY DATE(createdAt), type ORDER BY DATE(createdAt)",
+  "rows": [
+    {
+      "date": "2026-03-24",
+      "cnt": "1",
+      "type": "audio"
+    }
+  ],
+  "messages": [],
+  "stdout": "date\tcnt\ttype\n2026-03-24\t1\taudio\n",
+  "stderr": "",
+  "execution_time_ms": 1667
+}

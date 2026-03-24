@@ -297,8 +297,8 @@ export async function getUserActivityTimeline(userId: number, days: number = 30)
   const db = await getDb();
   if (!db) return [];
   const result = await db.select({
-    date: sql<string>`DATE(${activities.createdAt})`,
-    count: sql<number>`count(*)`,
+    date: sql<string>`DATE(${activities.createdAt})`.as('date'),
+    count: sql<number>`count(*)`.as('cnt'),
     type: activities.type,
   }).from(activities)
     .where(and(

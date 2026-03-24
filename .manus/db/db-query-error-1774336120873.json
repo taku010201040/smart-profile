@@ -1,0 +1,8 @@
+{
+  "query": "SELECT DATE(`createdAt`), count(*), `type` FROM `activities` WHERE (`activities`.`userId` = 1 AND `activities`.`createdAt` >= DATE_SUB(NOW(), INTERVAL 30 DAY)) GROUP BY DATE(`activities`.`createdAt`), `activities`.`type` ORDER BY DATE(`activities`.`createdAt`)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user qb4KWKvh9RF89Sy.ba0d13ba57ce --database DPWoTENtbqvfBEJqVPVTUM --execute SELECT DATE(`createdAt`), count(*), `type` FROM `activities` WHERE (`activities`.`userId` = 1 AND `activities`.`createdAt` >= DATE_SUB(NOW(), INTERVAL 30 DAY)) GROUP BY DATE(`activities`.`createdAt`), `activities`.`type` ORDER BY DATE(`activities`.`createdAt`)",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1055 (42000) at line 1: Expression #1 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'DPWoTENtbqvfBEJqVPVTUM.activities.createdAt' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by"
+  ]
+}
