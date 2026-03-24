@@ -1,0 +1,38 @@
+{
+  "query": "SELECT mr.id, mr.targetUserId, mr.type, mr.score, u.name FROM match_recommendations mr JOIN users u ON mr.targetUserId = u.id WHERE mr.userId = 1 ORDER BY mr.score DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user qb4KWKvh9RF89Sy.ba0d13ba57ce --database DPWoTENtbqvfBEJqVPVTUM --execute SELECT mr.id, mr.targetUserId, mr.type, mr.score, u.name FROM match_recommendations mr JOIN users u ON mr.targetUserId = u.id WHERE mr.userId = 1 ORDER BY mr.score DESC;",
+  "rows": [
+    {
+      "id": "3",
+      "targetUserId": "117",
+      "type": "role_model",
+      "score": "0.91",
+      "name": "帰りん太郎"
+    },
+    {
+      "id": "1",
+      "targetUserId": "115",
+      "type": "friend",
+      "score": "0.87",
+      "name": "桑原智樹"
+    },
+    {
+      "id": "4",
+      "targetUserId": "118",
+      "type": "friend",
+      "score": "0.85",
+      "name": "三階恵"
+    },
+    {
+      "id": "2",
+      "targetUserId": "116",
+      "type": "friend",
+      "score": "0.72",
+      "name": "古川貴大"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttargetUserId\ttype\tscore\tname\n3\t117\trole_model\t0.91\t帰りん太郎\n1\t115\tfriend\t0.87\t桑原智樹\n4\t118\tfriend\t0.85\t三階恵\n2\t116\tfriend\t0.72\t古川貴大\n",
+  "stderr": "",
+  "execution_time_ms": 1531
+}

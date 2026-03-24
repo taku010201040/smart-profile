@@ -281,9 +281,34 @@ export async function getUserRecommendations(userId: number, type?: string) {
   if (!db) return [];
   const conditions = [eq(matchRecommendations.userId, userId), eq(matchRecommendations.isActedUpon, false)];
   if (type) conditions.push(eq(matchRecommendations.type, type as any));
-  return db.select().from(matchRecommendations)
+  const recs = await db.select().from(matchRecommendations)
     .where(and(...conditions))
     .orderBy(desc(matchRecommendations.score));
+
+  // Enrich with target user info and profile
+  const enriched = [];
+  for (const rec of recs) {
+    const targetUser = await getUserById(rec.targetUserId);
+    const targetProfile = targetUser ? await getOrCreateProfile(targetUser.id) : undefined;
+    enriched.push({
+      ...rec,
+      targetUser: targetUser ? {
+        id: targetUser.id,
+        name: targetUser.name,
+        school: targetUser.school,
+        grade: targetUser.grade,
+        bio: targetUser.bio,
+        avatarUrl: targetUser.avatarUrl,
+      } : null,
+      targetProfile: targetProfile ? {
+        generatedBio: targetProfile.generatedBio,
+        skills: targetProfile.skills,
+        interests: targetProfile.interests,
+        strengths: targetProfile.strengths,
+      } : null,
+    });
+  }
+  return enriched;
 }
 
 export async function updateMatchRecommendation(id: number, data: Partial<InsertMatchRecommendation>) {
