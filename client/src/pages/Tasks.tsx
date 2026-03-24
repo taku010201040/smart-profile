@@ -1,0 +1,235 @@
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import {
+  ListTodo,
+  Plus,
+  Sparkles,
+  Loader2,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import { useState } from "react";
+
+export default function Tasks() {
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showCreate, setShowCreate] = useState(false);
+  const utils = trpc.useUtils();
+
+  const { data: tasks, isLoading } = trpc.task.list.useQuery(
+    statusFilter === "all" ? {} : { status: statusFilter }
+  );
+  const { data: stats } = trpc.task.stats.useQuery();
+  const updateTask = trpc.task.update.useMutation({
+    onSuccess: () => { utils.task.list.invalidate(); utils.task.stats.invalidate(); },
+  });
+  const deleteTask = trpc.task.delete.useMutation({
+    onSuccess: () => { utils.task.list.invalidate(); utils.task.stats.invalidate(); toast.success("タスクを削除しました"); },
+  });
+
+  const toggleComplete = (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === "completed" ? "pending" : "completed";
+    updateTask.mutate({ id, status: newStatus });
+  };
+
+  const priorityConfig: Record<string, { label: string; color: string; icon: any }> = {
+    high: { label: "高", color: "bg-destructive/10 text-destructive border-destructive/30", icon: AlertCircle },
+    medium: { label: "中", color: "bg-chart-2/10 text-chart-2 border-chart-2/30", icon: Clock },
+    low: { label: "低", color: "bg-chart-4/10 text-chart-4 border-chart-4/30", icon: CheckCircle2 },
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">タスク管理</h1>
+          <p className="text-muted-foreground mt-1">AIが自動抽出したタスクと手動タスクを管理</p>
+        </div>
+        <Dialog open={showCreate} onOpenChange={setShowCreate}>
+          <DialogTrigger asChild>
+            <Button className="gap-2"><Plus className="h-4 w-4" />新規タスク</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <CreateTaskForm onClose={() => setShowCreate(false)} />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Stats */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <MiniStat label="合計" value={stats.total} />
+          <MiniStat label="未着手" value={stats.pending} />
+          <MiniStat label="進行中" value={stats.inProgress} />
+          <MiniStat label="完了" value={stats.completed} />
+        </div>
+      )}
+
+      {/* Filter */}
+      <div className="flex items-center gap-3">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">すべて</SelectItem>
+            <SelectItem value="pending">未着手</SelectItem>
+            <SelectItem value="in_progress">進行中</SelectItem>
+            <SelectItem value="completed">完了</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Task List */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+        </div>
+      ) : tasks && tasks.length > 0 ? (
+        <div className="space-y-2">
+          {tasks.map(task => {
+            const pConfig = priorityConfig[task.priority] || priorityConfig.medium;
+            return (
+              <Card key={task.id} className={`transition-all ${task.status === "completed" ? "opacity-60" : ""}`}>
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={task.status === "completed"}
+                      onCheckedChange={() => toggleComplete(task.id, task.status)}
+                      className="shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm ${task.status === "completed" ? "line-through text-muted-foreground" : "font-medium"}`}>
+                          {task.title}
+                        </span>
+                        {task.isAutoGenerated && (
+                          <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+                            <Sparkles className="h-3 w-3" />AI
+                          </Badge>
+                        )}
+                      </div>
+                      {task.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="outline" className={`text-xs ${pConfig.color}`}>
+                        {pConfig.label}
+                      </Badge>
+                      <Select
+                        value={task.status}
+                        onValueChange={(v) => updateTask.mutate({ id: task.id, status: v as any })}
+                      >
+                        <SelectTrigger className="h-7 w-24 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">未着手</SelectItem>
+                          <SelectItem value="in_progress">進行中</SelectItem>
+                          <SelectItem value="completed">完了</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteTask.mutate({ id: task.id })}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <ListTodo className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+            <p className="text-muted-foreground">タスクはありません</p>
+            <p className="text-sm text-muted-foreground mt-1">記録を追加するとAIが自動でタスクを抽出します</p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <Card>
+      <CardContent className="py-3 px-4 text-center">
+        <p className="text-2xl font-bold">{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CreateTaskForm({ onClose }: { onClose: () => void }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const utils = trpc.useUtils();
+  const createTask = trpc.task.create.useMutation({
+    onSuccess: () => {
+      utils.task.list.invalidate();
+      utils.task.stats.invalidate();
+      toast.success("タスクを作成しました");
+      onClose();
+    },
+  });
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>新規タスク作成</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 mt-4">
+        <div className="space-y-2">
+          <Label>タイトル</Label>
+          <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="タスク名を入力" />
+        </div>
+        <div className="space-y-2">
+          <Label>説明（任意）</Label>
+          <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="詳細を入力" />
+        </div>
+        <div className="space-y-2">
+          <Label>優先度</Label>
+          <Select value={priority} onValueChange={setPriority}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">低</SelectItem>
+              <SelectItem value="medium">中</SelectItem>
+              <SelectItem value="high">高</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          onClick={() => createTask.mutate({ title, description: description || undefined, priority: priority as any })}
+          disabled={!title.trim() || createTask.isPending}
+          className="w-full"
+        >
+          {createTask.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          作成
+        </Button>
+      </div>
+    </>
+  );
+}
